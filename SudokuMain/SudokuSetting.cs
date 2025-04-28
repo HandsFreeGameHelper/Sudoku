@@ -1,4 +1,4 @@
-﻿namespace SudokuGame.SudokuMain
+﻿namespace SudokuDotNetCore.SudokuMain
 {
     public class SudokuSetting
     {

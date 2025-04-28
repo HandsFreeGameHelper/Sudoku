@@ -1,6 +1,7 @@
-﻿using System.Drawing;
+﻿using System.Collections.Generic;
+using System.Drawing;
 
-namespace SudokuGame.SudokuMain
+namespace SudokuDotNetCore.SudokuMain
 {
     public class UseableValue
     {

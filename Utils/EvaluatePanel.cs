@@ -1,4 +1,10 @@
-﻿namespace SudokuGame
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace SudokuDotNetCore
 {
     public static class EvaluatePanel
     {
@@ -65,15 +71,35 @@
             return score;
         }
 
-        private static string ClassifyDifficulty(double score, int emptyCells) => (score, emptyCells) switch
+        private static string ClassifyDifficulty(double score, int emptyCells)
         {
-            ( < 20, _) => "简单",
-            ( < 40, _) => "中等",
-            ( < 60, _) => "困难",
-            ( < 100, _) => "专业",
-            ( < 120, _) => "专家",
-            _ => "挑战"
-        };
+            var res = string.Empty;
+            if (score < 20)
+            {
+                res = "简单";
+            }
+            else if (score < 40)
+            {
+                res = "中等";
+            }
+            else if (score < 60)
+            {
+                res = "困难";
+            }
+            else if (score < 100)
+            {
+                res = "专业";
+            }
+            else if (score < 120)
+            {
+                res = "专家";
+            }
+            else 
+            {
+                res = "挑战";
+            }
+            return res;
+        }
 
         private static string FormatReasons(List<string> reasons)
         {
@@ -256,7 +282,7 @@
                 foreach (var cell in cells)
                 {
                     var candidates = GetCandidates(board, cell.Item1, cell.Item2);
-                    if (candidates.Count is >= 2 and <= 3)
+                    if (candidates.Count >= 2 && candidates.Count <= 3)
                         triples.Add(candidates);
                 }
 
@@ -404,7 +430,7 @@
                     for (int col = 0; col < 9; col++)
                         if (IsCandidate(board, row, col, num)) cols.Add(col);
 
-                    if (cols.Count is 2 or 3) rowDict[row] = cols;
+                    if (cols.Count == 2 || cols.Count == 3) rowDict[row] = cols;
                 }
 
                 if (FindSwordfishPattern(rowDict)) return true;
@@ -417,7 +443,7 @@
                     for (int row = 0; row < 9; row++)
                         if (IsCandidate(board, row, col, num)) rows.Add(row);
 
-                    if (rows.Count is 2 or 3) colDict[col] = rows;
+                    if (rows.Count == 2 || rows.Count  == 3) colDict[col] = rows;
                 }
 
                 if (FindSwordfishPattern(colDict)) return true;
@@ -548,7 +574,7 @@
                     for (int col = 0; col < 9; col++)
                         if (IsCandidate(board, row, col, num)) cols.Add(col);
 
-                    if (cols.Count is 2 or 3 or 4) rowDict[row] = cols;
+                    if (cols.Count == 2 || cols.Count == 3 || cols.Count == 4) rowDict[row] = cols;
                 }
 
                 if (FindJellyfishPattern(rowDict)) return true;
@@ -561,7 +587,7 @@
                     for (int row = 0; row < 9; row++)
                         if (IsCandidate(board, row, col, num)) rows.Add(row);
 
-                    if (rows.Count is 2 or 3 or 4) colDict[col] = rows;
+                    if (rows.Count == 2 || rows.Count == 3 || rows.Count == 4) colDict[col] = rows;
                 }
 
                 if (FindJellyfishPattern(colDict)) return true;
@@ -674,6 +700,131 @@
         }
         #endregion
 
+        #region 唯一解验证
+        public static bool IsPuzzleUnique(int[,] originalBoard, CancellationToken cancellationToken)
+        {
+            // 验证初始棋盘是否有效
+            if (!IsValidBoard(originalBoard))
+                return false;
+
+            int[,] board = (int[,])originalBoard.Clone();
+            int solutionCount = 0;
+            
+            // 使用MRV启发式搜索
+            var emptyCells = GetAllEmptyCells(board);
+            if (emptyCells.Count == 0)
+                return true;
+
+            // 按候选数数量排序
+            emptyCells.Sort((a, b) => 
+                GetCandidates(board, a.Item1, a.Item2).Count.CompareTo(
+                GetCandidates(board, b.Item1, b.Item2).Count));
+
+            return CheckUniqueness(board, emptyCells, 0, ref solutionCount, cancellationToken);
+        }
+
+        private static bool CheckUniqueness(int[,] board, List<Tuple<int, int>> emptyCells, 
+            int index, ref int solutionCount, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (index >= emptyCells.Count)
+            {
+                solutionCount++;
+                return solutionCount < 2; // 找到两个解时停止
+            }
+
+            var (row, col) = emptyCells[index];
+            var candidates = GetCandidates(board, row, col).ToList();
+
+            foreach (var num in candidates)
+            {
+                // 尝试填充当前数字
+                board[row, col] = num;
+
+                // 检查是否违反数独规则
+                if (!IsValidBoard(board))
+                {
+                    board[row, col] = 0;
+                    continue;
+                }
+
+                // 递归检查
+                if (!CheckUniqueness(board, emptyCells, index + 1, ref solutionCount, cancellationToken))
+                    return false;
+
+                // 回溯
+                board[row, col] = 0;
+
+                if (solutionCount >= 2)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static List<Tuple<int, int>> GetAllEmptyCells(int[,] board)
+        {
+            var cells = new List<Tuple<int, int>>();
+            for (int r = 0; r < 9; r++)
+                for (int c = 0; c < 9; c++)
+                    if (board[r, c] == 0)
+                        cells.Add(Tuple.Create(r, c));
+            return cells;
+        }
+
+        private static (int row, int col) FindFirstEmptyCell(int[,] board)
+        {
+            for (int r = 0; r < 9; r++)
+                for (int c = 0; c < 9; c++)
+                    if (board[r, c] == 0)
+                        return (r, c);
+            return (-1, -1);
+        }
+
+        private static bool IsValidBoard(int[,] board)
+        {
+            // 检查行
+            for (int r = 0; r < 9; r++)
+            {
+                var numbers = new HashSet<int>();
+                for (int c = 0; c < 9; c++)
+                {
+                    if (board[r, c] != 0 && !numbers.Add(board[r, c]))
+                        return false;
+                }
+            }
+
+            // 检查列
+            for (int c = 0; c < 9; c++)
+            {
+                var numbers = new HashSet<int>();
+                for (int r = 0; r < 9; r++)
+                {
+                    if (board[r, c] != 0 && !numbers.Add(board[r, c]))
+                        return false;
+                }
+            }
+
+            // 检查宫
+            for (int box = 0; box < 9; box++)
+            {
+                int startRow = (box / 3) * 3;
+                int startCol = (box % 3) * 3;
+                var numbers = new HashSet<int>();
+                for (int r = startRow; r < startRow + 3; r++)
+                {
+                    for (int c = startCol; c < startCol + 3; c++)
+                    {
+                        if (board[r, c] != 0 && !numbers.Add(board[r, c]))
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+        #endregion
         #region 核心方法修复
         private static bool ApplyNakedSingles(int[,] board)
         {

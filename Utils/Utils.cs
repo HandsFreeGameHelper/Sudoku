@@ -1,13 +1,61 @@
-﻿using SudokuGame.SudokuMain;
+﻿﻿﻿﻿using SudokuDotNetCore.SudokuMain;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using static SudokuGame.SudokuMain.Sudoku;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using static SudokuDotNetCore.SudokuMain.Sudoku;
 
-namespace SudokuGame
+namespace SudokuDotNetCore
 {
     public static class Utils
     {
-        private static object _lock;
+
+        public static void ConsoleLog(List<List<Panel>> panel, int logIndex, SudokuSetting sudokuSetting)
+        {
+                Console.ForegroundColor = ConsoleColor.White;
+                Func<int, int, string, string> Judge = (int index, int length, string item) =>
+                {
+                    return index == 0 ? "#[ " + item + "," : index == length - 1 ? item + " ]#" : item + ",";
+                };
+                var cloum = string.Empty;
+                var symble = GenerateSymble(sudokuSetting);
+                var line = logIndex * sudokuSetting.LineHeight;
+                line += 1;
+                Console.SetCursorPosition((Console.WindowWidth - symble.Length) / 2, line);
+                Console.WriteLine(symble);
+                for (int i = 0; i < panel.Count; i++)
+                {
+                    var row = string.Empty;
+                    for (int j = 0; j < panel[i].Count; j++)
+                    {
+                        row += Judge(j, panel[i].Count, sudokuSetting.PanelSize > 9 ? panel[i][j].Value.ToString().PadLeft(2, ' ') : panel[i][j].Value.ToString());
+                    }
+                    line += 1;
+                    Console.SetCursorPosition((Console.WindowWidth - row.Length) / 2, line);
+                    Console.WriteLine(row);
+                }
+                line += 1;
+                Console.SetCursorPosition((Console.WindowWidth - symble.Length) / 2, line);
+                Console.WriteLine(symble);
+                line += 1;
+                Console.WriteLine(Environment.NewLine);
+        }
+
+        public static string GenerateSymble(SudokuSetting sudokuSetting)
+        {
+            var symble = string.Empty;
+            for (int i = 0; i < sudokuSetting.PanelSize; i++)
+            {
+                symble += i < sudokuSetting.PanelSize - 1 ? sudokuSetting.PanelSize > 9 ? "###" : "##" : sudokuSetting.PanelSize > 9 ? "##" : "#";
+            }
+
+            return symble + "######";
+        }
+
         public static int[,] TransformPanel(List<List<Panel>> panel)
         {
             var res = new int[panel.Count, panel.Count];
@@ -33,7 +81,7 @@ namespace SudokuGame
                     {
                         Value = panel[i,j],
                         Replaceable = panel[i,j] == 0,
-                        Point = new Point(i, j)
+                        PanelPoint = new Point(i, j)
                     };
                     row.Add(p);
                 }
@@ -42,7 +90,7 @@ namespace SudokuGame
             return res;
         }
 
-        public static List<int[,]> GeneratePanels(Level gameLevel, int count = 1)
+        public static  List<int[,]> GeneratePanels(Level gameLevel, int count = 1)
         {
             var total = new Stopwatch();
             total.Start();
@@ -54,7 +102,7 @@ namespace SudokuGame
             {
                 GameLevel = gameLevel,
             };
-            using (StreamWriter writer = new StreamWriter(filePath))
+            //using (StreamWriter writer = new StreamWriter(filePath))
             {
                 var i = 0;
                 while (i < count)
@@ -66,7 +114,7 @@ namespace SudokuGame
                     var panel = sudoku.Generate(cancellationTokenSource.Token);
                     var repanel = CopyTo(cancellationTokenSource.Token, sudoku.ReplacePanel(cancellationTokenSource.Token, panel));
                     var key = GenerateSudokuKey(repanel);
-                    while (dic2.Contains(key) || !JudgeLevel(cancellationTokenSource.Token, repanel, out level, sudoku.SudokuGameSetting.GameLevel))
+                    while (dic2.Contains(key) || !JudgeLevel(cancellationTokenSource.Token, repanel, out level, sudoku.SudokuDotNetCoreSetting.GameLevel))
                     {
                         repanel = CopyTo(cancellationTokenSource.Token, sudoku.ReplacePanel(cancellationTokenSource.Token, panel));
                         key = GenerateSudokuKey(repanel);
@@ -75,26 +123,26 @@ namespace SudokuGame
 
                     var reason = string.Empty;
                     var score = EvaluatePanel.EvaluateSudokuDifficulty(TransformPanel(repanel), out reason);
-                    writer.WriteLine("Score " + score + " Reason " + reason);
-                    writer.WriteLine("Replaced Panel");
-                    writer.WriteLog(repanel);
-                    writer.WriteLine("");
+                    //writer.WriteLine("Score " + score + " Reason " + reason);
+                    //writer.WriteLine("Replaced Panel");
+                    //writer.WriteLog(repanel);
+                    //writer.WriteLine("");
                     i++;
-                    sudoku.ConsoleLog(panel, 0);
-                    sudoku.ConsoleLog(repanel, 1);
+                    //sudoku.ConsoleLog(panel, 0);
+                    //sudoku.ConsoleLog(repanel, 1);
                     GC.Collect();
                     res.Add(TransformPanel(repanel));
                     //Console.ReadKey();
                 }
                 total.Stop();
-                Console.SetCursorPosition(0, 0);
-                writer.WriteLine("Total Hours: " + total.Elapsed.TotalHours);
-                Console.WriteLine(total.Elapsed.TotalHours);
+                //Console.SetCursorPosition(0, 0);
+                //writer.WriteLine("Total Hours: " + total.Elapsed.TotalHours);
+                //Console.WriteLine(total.Elapsed.TotalHours);
             }
             return res;
         }
 
-        public static List<List<Panel>> GeneratePanel(Level gameLevel, int count = 1)
+        public static (List<List<Panel>>, List<List<Panel>>) GeneratePanel(Level gameLevel)
         {
             var total = new Stopwatch();
             total.Start();
@@ -102,221 +150,74 @@ namespace SudokuGame
             var now = DateTime.Now.ToString("yyyyMMddHHmmss");
             string filePath = $"Sudokuku_output_{LevelToString(gameLevel)}_{now}.txt";
             var res = new List<List<Panel>>();
+            var panel = new List<List<Panel>>();
             var gameSetting = new SudokuSetting()
             {
                 GameLevel = gameLevel,
             };
-            using (StreamWriter writer = new StreamWriter(filePath))
+            //using (StreamWriter writer = new StreamWriter(filePath))
             {
-                var i = 0;
-                while (i < count)
+                var cancellationTokenSource = new CancellationTokenSource();
+                var sudoku = new Sudoku(gameSetting);
+
+                var level = 0;
+                panel = sudoku.Generate(cancellationTokenSource.Token);
+                var repanel = CopyTo(cancellationTokenSource.Token, sudoku.ReplacePanel(cancellationTokenSource.Token,  panel));
+                var key = GenerateSudokuKey(repanel);
+                while (dic2.Contains(key) || !JudgeLevel(cancellationTokenSource.Token, repanel, out level, sudoku.SudokuDotNetCoreSetting.GameLevel))
                 {
-                    var cancellationTokenSource = new CancellationTokenSource();
-                    var sudoku = new Sudoku(gameSetting);
-
-                    var level = 0;
-                    var panel = sudoku.Generate(cancellationTokenSource.Token);
-                    var repanel = CopyTo(cancellationTokenSource.Token, sudoku.ReplacePanel(cancellationTokenSource.Token, panel));
-                    var key = GenerateSudokuKey(repanel);
-                    while (dic2.Contains(key) || !JudgeLevel(cancellationTokenSource.Token, repanel, out level, sudoku.SudokuGameSetting.GameLevel))
-                    {
-                        repanel = CopyTo(cancellationTokenSource.Token, sudoku.ReplacePanel(cancellationTokenSource.Token, panel));
-                        key = GenerateSudokuKey(repanel);
-                    }
-                    dic2.Add(key);
-
-                    var reason = string.Empty;
-                    var score = EvaluatePanel.EvaluateSudokuDifficulty(TransformPanel(repanel), out reason);
-                    writer.WriteLine("Score " + score + " Reason " + reason);
-                    writer.WriteLine("Replaced Panel");
-                    writer.WriteLog(repanel);
-                    writer.WriteLine("");
-                    i++;
-                    sudoku.ConsoleLog(panel, 0);
-                    sudoku.ConsoleLog(repanel, 1);
-                    GC.Collect();
-                    res = repanel;
-                    //Console.ReadKey();
+                    repanel = CopyTo(cancellationTokenSource.Token, sudoku.ReplacePanel(cancellationTokenSource.Token,  panel));
+                    key = GenerateSudokuKey(repanel);
                 }
+                dic2.Add(key);
+
+                var reason = string.Empty;
+                var score = EvaluatePanel.EvaluateSudokuDifficulty(TransformPanel(repanel), out reason);
+                //writer.WriteLine("Score " + score + " Reason " + reason);
+                //writer.WriteLine("Replaced Panel");
+                //writer.WriteLog(repanel);
+                //writer.WriteLine("");
+                //sudoku.ConsoleLog(panel, 0);
+                //sudoku.ConsoleLog(repanel, 1);
+                GC.Collect();
+                res = repanel;
+                //Console.ReadKey();
+                
                 total.Stop();
-                Console.SetCursorPosition(0, 0);
-                writer.WriteLine("Total Hours: " + total.Elapsed.TotalHours);
-                Console.WriteLine(total.Elapsed.TotalHours);
+                //Console.SetCursorPosition(0, 0);
+                //writer.WriteLine("Total Hours: " + total.Elapsed.TotalHours);
+                //Console.WriteLine(total.Elapsed.TotalHours);
             }
-            return res;
+            return (panel, res);
         }
 
-        public static async Task<int[,]> Resolve(List<List<Panel>> panel)
+        public static async Task<(bool,List<List<Panel>>)> Resolve(List<List<Panel>> panel)
         {
-            var res = new int[9, 9];
-            var total = new Stopwatch();
-            total.Start();
             var asyncTaskWatch = new Stopwatch();
-            var dic1 = new Dictionary<string, TaskInfo>();
-            var dic2 = new List<string>();
-            var now = DateTime.Now.ToString("yyyyMMddHHmmss.fff");
-            var gameLevel = Level.Master;
-            string filePath = $"Sudokuku_output_Resolver_{now}.txt";
-            using (StreamWriter writer = new StreamWriter(filePath))
+            var cancellationTokenSource = new CancellationTokenSource();
+            var sudokuT = new Sudoku(new SudokuSetting()
             {
-                #region TaskInfo
-                var taskInfos = new List<TaskInfo>();
-                var taskInfo1 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Index = 1
-                };
-                var taskInfo2 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = true,
-                    Index = 2
-                };
-                var taskInfo3 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Midtoright = true,
-                    Index = 3
-                };
-                var taskInfo4 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Midtoright = false,
-                    Index = 4
-                };
-                var taskInfo5 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Mix = true,
-                    Index = 5
-                };
-                var taskInfo6 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Midtoright = true,
-                    Mix = true,
-                    Index = 6
-                };
-                var taskInfo7 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Skip = true,
-                    Index = 7
-                };
-                var taskInfo8 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = true,
-                    Skip = true,
-                    Index = 8
-                };
-                var taskInfo9 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Midtoright = true,
-                    Skip = true,
-                    Index = 9
-                };
-                var taskInfo10 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Midtoright = false,
-                    Skip = true,
-                    Index = 10
-                };
-                var taskInfo11 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Mix = true,
-                    Skip = true,
-                    Index = 11
-                };
-                var taskInfo12 = new TaskInfo()
-                {
-                    AsyncTaskWatch = asyncTaskWatch,
-                    Reserve = false,
-                    Midtoright = true,
-                    Mix = true,
-                    Skip = true,
-                    Index = 12
-                };
-                taskInfos.Add(taskInfo1);
-                taskInfos.Add(taskInfo2);
-                taskInfos.Add(taskInfo3);
-                //taskInfos.Add(taskInfo4);
-                taskInfos.Add(taskInfo5);
-                taskInfos.Add(taskInfo6);
-                taskInfos.Add(taskInfo7);
-                taskInfos.Add(taskInfo8);
-                taskInfos.Add(taskInfo9);
-                //taskInfos.Add(taskInfo10);
-                taskInfos.Add(taskInfo11);
-                taskInfos.Add(taskInfo12);
-                #endregion
+                GameLevel = Level.Master,
+            });
 
-                asyncTaskWatch.Restart();
-                var tasks = new List<Task>();
-                var cancellationTokenSource = new CancellationTokenSource();
-                var sudokuT = new Sudoku(new SudokuSetting()
-                {
-                    GameLevel = gameLevel,
-                });
+            var taskInfo = new TaskInfo()
+            {
+                AsyncTaskWatch = asyncTaskWatch,
+                CancellationTokenSource = cancellationTokenSource,
+                Sudoku = sudokuT
+            };
+            asyncTaskWatch.Restart();
 
-                var repanel = CopyTo(cancellationTokenSource.Token, panel);
-                JudgeLevel(cancellationTokenSource.Token, repanel, out var level, sudokuT.SudokuGameSetting.GameLevel);
-                Console.Clear();
-                Init(taskInfos, sudokuT, panel, repanel, cancellationTokenSource);
-                var tasklist = GetTasks(taskInfos);
-                tasks.AddRange(tasklist);
-                await Task.WhenAll(tasks);
-                var ok = taskInfos.Where(x => x.IsFound).FirstOrDefault();
-                if (ok != null)
-                {
-                    Console.Clear();
-                    sudokuT.ConsoleLog(ok.ReplacedPanel, 0);
-                    sudokuT.ConsoleLog(ok.ResolvedPanel, 1);
-                    ok.Count = 1;
-                    ok.Time = asyncTaskWatch.Elapsed.TotalSeconds;
-                    ok.Level = level;
-                    dic1.Add(ok.Opreation, ok);
-                    Console.WriteLine(taskInfos.Where(x => x.IsFound).First().Opreation + " TotalTime:" + asyncTaskWatch.Elapsed.TotalSeconds + "s");
-                    writer.WriteLine($"{ok.Opreation}  {level}  {asyncTaskWatch.Elapsed.TotalSeconds + "s"}");
-                    var reason = string.Empty;
-                    var score = EvaluatePanel.EvaluateSudokuDifficulty(Utils.TransformPanel(ok.ReplacedPanel), out reason);
-                    writer.WriteLine("Score " + score + " Reason " + reason);
-                    writer.WriteLine("Replaced Panel");
-                    writer.WriteLog(ok.ReplacedPanel);
-                    writer.WriteLine("");
-                    writer.WriteLog(ok.ResolvedPanel);
-                    writer.WriteLine("");
-                    res = TransformPanel(ok.ResolvedPanel);
-                }
-                else
-                {
-                    Console.WriteLine("NotFound TotalTime:" + asyncTaskWatch.Elapsed.TotalSeconds + "s");
-                }
-                GC.Collect();
-                total.Stop();
-                var resDic = dic1.OrderByDescending(x => x.Value.Count);
-                foreach (var item in resDic)
-                {
-                    Console.WriteLine($"{item.Key}  {item.Value.Count}  {item.Value.TimePerCount}  {item.Value.LevelPerCount}");
-                    writer.WriteLine($"{item.Key}  {item.Value.Count}  {item.Value.TimePerCount}  {item.Value.LevelPerCount}");
-                    writer.WriteLine("");
-                }
-                writer.WriteLine("Total Hours: " + total.Elapsed.TotalHours);
-                Console.WriteLine(total.Elapsed.TotalHours);
+            var initalItems = panel.SelectMany(x => x.Where(y => y.Value != 0));
+            taskInfo = await FigureoutIsUniqueSolution(taskInfo, CopyTo(taskInfo.CancellationTokenSource.Token, panel));
+
+            if (taskInfo.IsFound)
+            {
+                taskInfo.Count = 1;
+                taskInfo.Time = asyncTaskWatch.Elapsed.TotalSeconds;
             }
-            return res;
+            GC.Collect();
+            return (taskInfo.IsUniqueSolution , taskInfo.ResolvedPanel);
         }
 
         public static void Init(List<TaskInfo> taskInfos, Sudoku Sudoku, List<List<Panel>> regionPanel, List<List<Panel>> replacedPanel, CancellationTokenSource cancellationTokenSource)
@@ -353,9 +254,9 @@ namespace SudokuGame
                         var panel2 = CopyTo(taskInfo.CancellationTokenSource.Token, taskInfo.ReplacedPanel);
                         taskInfo.ResolvedPanel = await taskInfo.Sudoku.ResolveAsync(taskInfo.CancellationTokenSource.Token, panel2, taskInfo);
                         taskInfo.CancellationTokenSource.Cancel();
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine(Environment.NewLine);
-                        Console.WriteLine("Panel generated successfully.");
+                        //Console.ForegroundColor = ConsoleColor.Red;
+                        //Console.WriteLine(Environment.NewLine);
+                        //Console.WriteLine("Panel generated successfully.");
                         taskInfo.AsyncTaskWatch.Stop();
                         taskInfo.IsFound = true;
                     }
@@ -430,22 +331,22 @@ namespace SudokuGame
             switch (level)
             {
                 case Level.Easy:
-                    res = "Easy(9~19)";
+                    res = "Easy(7~17)";
                     break;
                 case Level.Nomal:
-                    res = "Nomal(19~29)";
+                    res = "Nomal(14~24)";
                     break;
                 case Level.Hard:
-                    res = "Hard(29~39)";
+                    res = "Hard(24~34)";
                     break;
                 case Level.Perfessionnal:
-                    res = "Perfessionnal(39~49)";
+                    res = "Perfessionnal(34~44)";
                     break;
                 case Level.Master:
-                    res = "Master(52~62)";
+                    res = "Master(44~54)";
                     break;
                 case Level.Legendary:
-                    res = "Leagen(62~72)";
+                    res = "Leagen(54~64)";
                     break;
             }
             return res;
@@ -453,8 +354,8 @@ namespace SudokuGame
 
         public static Point LastPoint(this Point point, List<List<Panel>> panel)
         {
-            var temps = panel.SelectMany(x => x.Where(y => y.Replaceable && (y.Point.X < point.X || (y.Point.X == point.X && y.Point.Y < point.Y)))).LastOrDefault();
-            return temps?.Point ?? panel.SelectMany(x => x.Where(y => y.Replaceable)).First().Point;
+            var temps = panel.SelectMany(x => x.Where(y => y.Replaceable && (y.PanelPoint.X < point.X || (y.PanelPoint.X == point.X && y.PanelPoint.Y < point.Y)))).LastOrDefault();
+            return temps?.PanelPoint ?? panel.SelectMany(x => x.Where(y => y.Replaceable)).First().PanelPoint;
         }
 
         public static void WriteLog(this StreamWriter streamWriter, List<List<Panel>> panel)
@@ -488,13 +389,13 @@ namespace SudokuGame
             for (int i = 0; i < rows.Count; i++)
             {
                 var row = new List<Panel>();
-                var items = rows[i].Split(",").Where(x => !string.IsNullOrEmpty(x.Trim())).Select(x => x.Trim()).ToList();
+                var items = rows[i].Split(',').Where(x => !string.IsNullOrEmpty(x.Trim())).Select(x => x.Trim()).ToList();
                 for (int j = 0; j < items.Count; j++)
                 {
                     var val = Convert.ToInt32(items[j]);
                     row.Add(new Panel()
                     {
-                        Point = new Point(i, j),
+                        PanelPoint = new Point(i, j),
                         Value = val,
                         Replaceable = val == 0,
                     });
@@ -502,6 +403,193 @@ namespace SudokuGame
                 panel.Add(row);
             }
             return panel;
+        }
+        public static Task GetUniqueSolutionTask(TaskInfo taskInfo)
+        {
+            var task = Task.Run(() =>
+            {
+                try
+                {
+                    try
+                    {
+                        var panel2 = CopyTo(taskInfo.CancellationTokenSource.Token, taskInfo.ReplacedPanel);
+                        var initalItems = panel2.SelectMany(x => x.Where(y => y.Value != 0));
+                        taskInfo.IsUniqueSolution = initalItems.Count() < 17 || initalItems.Distinct().Count() < 7 ? false : taskInfo.Sudoku.IsUniqueSolution(taskInfo.CancellationTokenSource.Token, panel2);
+                    }
+                    catch (OperationCanceledException)
+                    {
+
+                    }
+                }
+                catch (OperationEndException)
+                {
+
+                }
+            });
+
+            return task;
+        }
+        public static Task FindSolution(TaskInfo taskInfo) 
+        {
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    try
+                    {
+                        var asyncTaskWatch = new Stopwatch();
+                        var listResolve = new Dictionary<string, TaskInfo>();
+                        #region TaskInfo
+                        var taskInfos = new List<TaskInfo>();
+                        var taskInfo1 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Index = 1
+                        };
+                        var taskInfo2 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = true,
+                            Index = 2
+                        };
+                        var taskInfo3 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Midtoright = true,
+                            Index = 3
+                        };
+                        var taskInfo4 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Midtoright = false,
+                            Index = 4
+                        };
+                        var taskInfo5 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Mix = true,
+                            Index = 5
+                        };
+                        var taskInfo6 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Midtoright = true,
+                            Mix = true,
+                            Index = 6
+                        };
+                        var taskInfo7 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Skip = true,
+                            Index = 7
+                        };
+                        var taskInfo8 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = true,
+                            Skip = true,
+                            Index = 8
+                        };
+                        var taskInfo9 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Midtoright = true,
+                            Skip = true,
+                            Index = 9
+                        };
+                        var taskInfo10 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Midtoright = false,
+                            Skip = true,
+                            Index = 10
+                        };
+                        var taskInfo11 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Mix = true,
+                            Skip = true,
+                            Index = 11
+                        };
+                        var taskInfo12 = new TaskInfo()
+                        {
+                            AsyncTaskWatch = asyncTaskWatch,
+                            Reserve = false,
+                            Midtoright = true,
+                            Mix = true,
+                            Skip = true,
+                            Index = 12
+                        };
+                        taskInfos.Add(taskInfo1);
+                        taskInfos.Add(taskInfo2);
+                        taskInfos.Add(taskInfo3);
+                        //taskInfos.Add(taskInfo4);
+                        taskInfos.Add(taskInfo5);
+                        taskInfos.Add(taskInfo6);
+                        taskInfos.Add(taskInfo7);
+                        taskInfos.Add(taskInfo8);
+                        taskInfos.Add(taskInfo9);
+                        //taskInfos.Add(taskInfo10);
+                        taskInfos.Add(taskInfo11);
+                        taskInfos.Add(taskInfo12);
+                        #endregion
+
+                        while (!((taskInfo.IsUniqueSolution && listResolve.Count == 1) || listResolve.Count > 2))
+                        {
+                            var tasks = new List<Task>();
+                            var cancellationTokenSource = new CancellationTokenSource();
+                            var repanel = CopyTo(cancellationTokenSource.Token, taskInfo.ReplacedPanel);
+                            JudgeLevel(cancellationTokenSource.Token, repanel, out var level, taskInfo.Sudoku.SudokuDotNetCoreSetting.GameLevel);
+                            //Console.Clear();
+                            Init(taskInfos, taskInfo.Sudoku, taskInfo.ReplacedPanel, repanel, cancellationTokenSource);
+                            var tasklist = GetTasks(taskInfos);
+                            tasks.AddRange(tasklist);
+                            await Task.WhenAll(tasks);
+                            var ok = taskInfos.Where(x => x.IsFound).FirstOrDefault();
+                            if (ok != null)
+                            {
+                                var suduKey = GenerateSudokuKey(ok.ResolvedPanel);
+                                if (!listResolve.ContainsKey(suduKey))
+                                {
+                                    listResolve.Add(suduKey, ok);
+                                }
+                            }
+                        }
+                        taskInfo.ResolvedPanel = listResolve.Values.First().ResolvedPanel;
+                        taskInfo.CancellationTokenSource.Cancel();
+                        taskInfo.AsyncTaskWatch.Stop();
+                        taskInfo.IsFound = true;
+                    }
+                    catch (OperationCanceledException)
+                    {
+
+                    }
+                }
+                catch (OperationEndException)
+                {
+
+                }
+            });
+            
+            return task;
+        }   
+
+        public static async Task<TaskInfo> FigureoutIsUniqueSolution(TaskInfo taskInfo, List<List<Panel>> panel) {
+            var tasks = new List<Task>();
+            taskInfo.ReplacedPanel = CopyTo(taskInfo.CancellationTokenSource.Token,panel);
+            tasks.Add(FindSolution(taskInfo));
+            tasks.Add(GetUniqueSolutionTask(taskInfo));
+            await Task.WhenAll(tasks);
+            return taskInfo;
         }
     }
 }

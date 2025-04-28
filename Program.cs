@@ -1,29 +1,26 @@
-﻿using SudokuGame.SudokuMain;
+﻿using SudokuDotNetCore.SudokuMain;
 
-namespace SudokuGame
+namespace SudokuDotNetCore
 {
     public class Program
     {
         static async Task Main(string[] args)
         {
-            var gameLevel = Level.Master;
-            var panels =  Utils.GeneratePanels(gameLevel, 10);
-            //var panel = Utils.GetPanelFromStr(
-            //    "[ 0,0,1,0,0,5,0,0,4 ]" +
-            //    "[ 0,0,0,0,0,9,0,0,6 ]" +
-            //    "[ 4,0,6,3,0,0,0,0,8 ]" +
-            //    "[ 0,0,0,0,0,0,0,0,0 ]" +
-            //    "[ 0,0,7,0,8,0,0,0,1 ]" +
-            //    "[ 0,0,4,0,0,3,5,0,0 ]" +
-            //    "[ 0,0,3,0,0,7,2,0,0 ]" +
-            //    "[ 0,7,0,9,0,0,1,0,0 ]" +
-            //    "[ 9,6,0,0,0,0,0,0,0 ]"
-            //);
-            foreach (var panel in panels)
+            var gameLevel = Level.Legendary;
+
+            while (true)
             {
-                await Utils.Resolve(Utils.TransformPanel(panel));
+                Console.Clear();
+                var uniquePuzzleList = Utils.GeneratePanel(gameLevel).Item2;
+                Utils.ConsoleLog(uniquePuzzleList, 0, new SudokuSetting());
+                Console.WriteLine("InitialValeCount :" + uniquePuzzleList.SelectMany(x=>x.Where(y=>y.Value != 0)).Count());
+                var panel = await Utils.Resolve(uniquePuzzleList);
+                Utils.ConsoleLog(panel.Item2, 1, new SudokuSetting());
+                Console.WriteLine(panel.Item1 ? "唯一解" :"多解");
+              
+
+                Console.ReadKey();
             }
-            Console.ReadKey();
         }
     }
 }

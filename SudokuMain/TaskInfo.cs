@@ -1,11 +1,14 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
 
-namespace SudokuGame.SudokuMain
+namespace SudokuDotNetCore.SudokuMain
 {
     public class TaskInfo
     {
         public Sudoku Sudoku { get; set; } = new Sudoku();
-
+        public bool IsUniqueSolution { get; set; }
         public List<List<Panel>> ResolvedPanel { get; set; } = new List<List<Panel>>();
         public List<List<Panel>> RegionPanel { get; set; } = new List<List<Panel>>();
         public List<List<Panel>> ReplacedPanel { get; set; } = new List<List<Panel>>();

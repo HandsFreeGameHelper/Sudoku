@@ -1,7 +1,12 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace SudokuGame.SudokuMain
+namespace SudokuDotNetCore.SudokuMain
 {
     public class Sudoku
     {
@@ -9,10 +14,10 @@ namespace SudokuGame.SudokuMain
 
         public Sudoku(SudokuSetting SudokuSetting)
         {
-            SudokuGameSetting = SudokuSetting;
+            SudokuDotNetCoreSetting = SudokuSetting;
         }
 
-        public SudokuSetting SudokuGameSetting { get; set; } = new SudokuSetting();
+        public SudokuSetting SudokuDotNetCoreSetting { get; set; } = new SudokuSetting();
 
         public bool Preprocessed { get; set; }
 
@@ -24,34 +29,34 @@ namespace SudokuGame.SudokuMain
 
         public List<List<Panel>> PreprocessedPanel { get; set; } = GenerateDefualtPanel(new SudokuSetting());
 
-        public static List<List<Panel>> GenerateDefualtPanel(SudokuSetting SudokuGameSetting)
+        public static List<List<Panel>> GenerateDefualtPanel(SudokuSetting SudokuDotNetCoreSetting)
         {
             var panel = new List<List<Panel>>();
-            for (int i = 0; i < SudokuGameSetting.PanelSize; i++)
+            for (int i = 0; i < SudokuDotNetCoreSetting.PanelSize; i++)
             {
                 var rows = new List<Panel>();
-                for (int j = 0; j < SudokuGameSetting.PanelSize; j++)
+                for (int j = 0; j < SudokuDotNetCoreSetting.PanelSize; j++)
                 {
-                    rows.Add(new Panel() { Value = 0, Point = new(i, j) });
+                    rows.Add(new Panel() { Value = 0, PanelPoint = new Point(i, j) });
                 }
                 panel.Add(rows);
             }
             return panel;
         }
 
-        public List<List<UseableValue>> GenerateUseableValue(CancellationToken cancellationToken, List<List<Panel>> panel, bool use, List<List<UseableValue>>? lastUseableValues = null, Point? point = null, int? value = null)
+        public List<List<UseableValue>> GenerateUseableValue(CancellationToken cancellationToken, List<List<Panel>> panel, bool use, List<List<UseableValue>> lastUseableValues = null, Point? point = null, int? value = null)
         {
             var useableValues = new List<List<UseableValue>>();
 
-            for (int i = 0; i < SudokuGameSetting.PanelSize; i++)
+            for (int i = 0; i < SudokuDotNetCoreSetting.PanelSize; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var useable = new List<UseableValue>();
-                for (int j = 0; j < SudokuGameSetting.PanelSize; j++)
+                for (int j = 0; j < SudokuDotNetCoreSetting.PanelSize; j++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var inerValues = new List<int>();
-                    for (int m = 1; m < SudokuGameSetting.PanelSize + 1; m++)
+                    for (int m = 1; m < SudokuDotNetCoreSetting.PanelSize + 1; m++)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         inerValues.Add(m);
@@ -62,7 +67,7 @@ namespace SudokuGame.SudokuMain
             }
             if (panel != null)
             {
-                for (int row = 0; row < SudokuGameSetting.PanelSize; row++)
+                for (int row = 0; row < SudokuDotNetCoreSetting.PanelSize; row++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var rowUseableValues = useableValues[row];
@@ -70,7 +75,7 @@ namespace SudokuGame.SudokuMain
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         var usedValues = panel[row][cloum];
-                        panel[row][cloum].Point = new Point(row, cloum);
+                        panel[row][cloum].PanelPoint = new Point(row, cloum);
                         rowUseableValues.ForEach(x =>
                         {
                             cancellationToken.ThrowIfCancellationRequested();
@@ -161,20 +166,20 @@ namespace SudokuGame.SudokuMain
             return useableValues;
         }
 
-        public List<List<UseableValue>> GenerateUseableValue(CancellationToken cancellationToken, List<List<Panel>>? panel = null, List<List<UseableValue>>? values = null, int resetRow = -1, int resetCloum = -1, int resetCount = 0)
+        public List<List<UseableValue>> GenerateUseableValue(CancellationToken cancellationToken, List<List<Panel>> panel = null, List<List<UseableValue>> values = null, int resetRow = -1, int resetCloum = -1, int resetCount = 0)
         {
 
             var useableValues = new List<List<UseableValue>>();
 
-            for (int i = 0; i < SudokuGameSetting.PanelSize; i++)
+            for (int i = 0; i < SudokuDotNetCoreSetting.PanelSize; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var useable = new List<UseableValue>();
-                for (int j = 0; j < SudokuGameSetting.PanelSize; j++)
+                for (int j = 0; j < SudokuDotNetCoreSetting.PanelSize; j++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var inerValues = new List<int>();
-                    for (int m = 1; m < SudokuGameSetting.PanelSize + 1; m++)
+                    for (int m = 1; m < SudokuDotNetCoreSetting.PanelSize + 1; m++)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         inerValues.Add(m);
@@ -199,14 +204,14 @@ namespace SudokuGame.SudokuMain
 
             if (panel != null)
             {
-                for (int row = 0; row < SudokuGameSetting.PanelSize; row++)
+                for (int row = 0; row < SudokuDotNetCoreSetting.PanelSize; row++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     var rowUseableValues = useableValues[row];
                     for (int cloum = 0; cloum < panel[row].Count; cloum++)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        panel[row][cloum].Point = new Point(row, cloum);
+                        panel[row][cloum].PanelPoint = new Point(row, cloum);
                         var usedValues = panel[row][cloum];
                         rowUseableValues.ForEach(x =>
                         {
@@ -286,7 +291,7 @@ namespace SudokuGame.SudokuMain
         public List<T> GetRange<T>(List<List<T>> useableValues, int row, int cloum, bool switcher = false)
         {
             var res = new List<T>();
-            var mod = this.SudokuGameSetting.PanelSize == 9 ? 3 : this.SudokuGameSetting.PanelSize == 16 ? 4 : 0;
+            var mod = this.SudokuDotNetCoreSetting.PanelSize == 9 ? 3 : this.SudokuDotNetCoreSetting.PanelSize == 16 ? 4 : 0;
             if (mod != 0)
             {
                 var rowStart = GetStart((row + 1) / mod, (row + 1) % mod) * mod;
@@ -309,51 +314,6 @@ namespace SudokuGame.SudokuMain
             return res;
         }
 
-        public void ConsoleLog(List<List<Panel>> panel, int logIndex)
-        {
-            lock (_lock)
-            {
-                Console.ForegroundColor = ConsoleColor.White;
-                Func<int, int, string, string> Judge = (int index, int length, string item) =>
-                {
-                    return index == 0 ? "#[ " + item + "," : index == length - 1 ? item + " ]#" : item + ",";
-                };
-                var cloum = string.Empty;
-                var symble = GenerateSymble();
-                var line = logIndex * SudokuGameSetting.LineHeight;
-                line += 1;
-                Console.SetCursorPosition((Console.WindowWidth - symble.Length) / 2, line);
-                Console.WriteLine(symble);
-                for (int i = 0; i < panel.Count; i++)
-                {
-                    var row = string.Empty;
-                    for (int j = 0; j < panel[i].Count; j++)
-                    {
-                        row += Judge(j, panel[i].Count, SudokuGameSetting.PanelSize > 9 ? panel[i][j].Value.ToString().PadLeft(2, ' ') : panel[i][j].Value.ToString());
-                    }
-                    line += 1;
-                    Console.SetCursorPosition((Console.WindowWidth - row.Length) / 2, line);
-                    Console.WriteLine(row);
-                }
-                line += 1;
-                Console.SetCursorPosition((Console.WindowWidth - symble.Length) / 2, line);
-                Console.WriteLine(symble);
-                line += 1;
-                Console.WriteLine(Environment.NewLine);
-            }
-        }
-
-        public string GenerateSymble()
-        {
-            var symble = string.Empty;
-            for (int i = 0; i < SudokuGameSetting.PanelSize; i++)
-            {
-                symble += i < SudokuGameSetting.PanelSize - 1 ? SudokuGameSetting.PanelSize > 9 ? "###" : "##" : SudokuGameSetting.PanelSize > 9 ? "##" : "#";
-            }
-
-            return symble + "######";
-        }
-
         public List<List<Panel>> Generate(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -361,9 +321,9 @@ namespace SudokuGame.SudokuMain
             totalWatch.Start();
             var panel = GeneratePanel(cancellationToken);
 
-            if (SudokuGameSetting.NeedReplace)
+            if (SudokuDotNetCoreSetting.NeedReplace)
             {
-                panel = ReplacePanel(cancellationToken, panel);
+                panel =  ReplacePanel(cancellationToken, panel);
             }
             totalWatch.Stop();
             return panel;
@@ -375,7 +335,7 @@ namespace SudokuGame.SudokuMain
             Preprocessed = false;
             genrateWatch.Restart();
             var random = new Random();
-            var panel = GenerateDefualtPanel(SudokuGameSetting);
+            var panel = GenerateDefualtPanel(SudokuDotNetCoreSetting);
             var useableValus = GenerateUseableValue(cancellationToken);
             var usedValues = GenerateUsedValue();
             Resolve(cancellationToken, ref panel, useableValus, random, false);
@@ -387,29 +347,303 @@ namespace SudokuGame.SudokuMain
         public List<List<Panel>> ReplacePanel(CancellationToken cancellationToken, List<List<Panel>> panel)
         {
             var random = new Random();
-            var repalceCount = random.Next((int)SudokuGameSetting.GameLevel, (int)SudokuGameSetting.GameLevel + 10) + 1;
+            var repalceCount = random.Next((int)SudokuDotNetCoreSetting.GameLevel, (int)SudokuDotNetCoreSetting.GameLevel + 10) + 1;
             var repalceLocations = new List<string>();
             var repalcedPanel = TransformToCloumOrRow(cancellationToken, panel, false);
+            var originalPanel = CopyTo(cancellationToken, panel);
 
+            // 优化后的移除策略
             for (int i = 0; i < repalceCount; i++)
             {
                 var row = -1;
                 var cloum = -1;
-                while (true)
+                int attempts = 0;
+                while (attempts < 100) // 防止无限循环
                 {
-                    var repalceLocation = GetRandomRowAndCloum(SudokuGameSetting, random, ref row, ref cloum);
+                    attempts++;
+                    var repalceLocation = GetRandomRowAndCloum(SudokuDotNetCoreSetting, random, ref row, ref cloum);
                     if (!repalceLocations.Contains(repalceLocation))
                     {
-                        repalceLocations.Add(repalceLocation);
-                        break;
+                        // 备份当前值
+                        var backupValue = repalcedPanel[row][cloum].Value;
+                        repalcedPanel[row][cloum].Value = 0;
+
+                        // 验证解的唯一性
+                        if (IsUniqueSolution(cancellationToken, repalcedPanel))
+                        {
+                            repalceLocations.Add(repalceLocation);
+                            break;
+                        }
+                        else
+                        {
+                            // 恢复值
+                            repalcedPanel[row][cloum].Value = backupValue;
+                        }
                     }
                 }
-                if (row != -1 && cloum != -1)
+            }
+            repalcedPanel.ForEach(x => x.ForEach(y => y.Replaceable = y.Value == 0));
+            return repalcedPanel;
+        }
+
+        /// <summary>
+        /// Dancing Links for Sudoku Exact Cover
+        /// </summary>
+        private class SudokuDLX
+        {
+            private readonly int N; // 9 for 9x9
+            private readonly int N2; // N*N
+            private readonly int N3; // N*N*N
+            private readonly int[,] grid; // 初始盘面
+            private readonly DLX dlx;
+
+            public SudokuDLX(int size)
+            {
+                N = size;
+                N2 = N * N;
+                N3 = N2 * N;
+                grid = new int[N, N];
+                dlx = new DLX(N2 * 4);
+            }
+
+            public void AddInitialValue(int row, int col, int val)
+            {
+                grid[row, col] = val;
+            }
+
+            public void Solve(Func<List<int>, CancellationToken, bool> onSolution,CancellationToken cancellationToken)
+            {
+                // 构建精确覆盖矩阵
+                for (int r = 0; r < N; r++)
                 {
-                    repalcedPanel[row][cloum].Value = 0;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    for (int c = 0; c < N; c++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (grid[r, c] != 0)
+                        {
+                            int d = grid[r, c] - 1;
+                            dlx.AddRow(GetRowIndex(r, c, d), BuildColumns(r, c, d));
+                        }
+                        else
+                        {
+                            for (int d = 0; d < N; d++)
+                            {
+                                dlx.AddRow(GetRowIndex(r, c, d), BuildColumns(r, c, d));
+                            }
+                        }
+                    }
+                }
+                dlx.Search(0, new List<int>(), onSolution,cancellationToken);
+            }
+
+            private int GetRowIndex(int r, int c, int d)
+            {
+                return r * N2 + c * N + d;
+            }
+
+            /// <summary>
+            /// 构建该填数对应的4个约束列
+            /// </summary>
+            private int[] BuildColumns(int r, int c, int d)
+            {
+                int boxSize = (int)Math.Sqrt(N);
+                int box = (r / boxSize) * boxSize + (c / boxSize);
+                return new int[]
+                {
+                    r * N + c, // 格子唯一
+                    N2 + r * N + d, // 行唯一
+                    N2 * 2 + c * N + d, // 列唯一
+                    N2 * 3 + box * N + d // 宫唯一
+                };
+            }
+
+            /// <summary>
+            /// Dancing Links实现
+            /// </summary>
+            private class DLX
+            {
+                private class Node
+                {
+                    public Node L, R, U, D;
+                    public ColumnNode C;
+                    public int RowID;
+                    public Node()
+                    {
+                        L = R = U = D = this;
+                    }
+                }
+
+                private class ColumnNode : Node
+                {
+                    public int S; // 该列1的数量
+                    public int Name;
+                    public ColumnNode(int name)
+                    {
+                        Name = name;
+                        C = this;
+                        S = 0;
+                    }
+                }
+
+                private ColumnNode header;
+                private List<ColumnNode> columns;
+                private List<Node> nodes;
+
+                public DLX(int nCols)
+                {
+                    header = new ColumnNode(-1);
+                    columns = new List<ColumnNode>();
+                    nodes = new List<Node>();
+                    for (int i = 0; i < nCols; i++)
+                    {
+                        var col = new ColumnNode(i);
+                        columns.Add(col);
+                        // 插入到header右侧
+                        col.R = header;
+                        col.L = header.L;
+                        header.L.R = col;
+                        header.L = col;
+                    }
+                }
+
+                public void AddRow(int rowID, int[] colIDs)
+                {
+                    Node first = null;
+                    foreach (var colID in colIDs)
+                    {
+                        var col = columns[colID];
+                        var node = new Node { C = col, RowID = rowID };
+                        nodes.Add(node);
+
+                        // 链入列
+                        node.D = col;
+                        node.U = col.U;
+                        col.U.D = node;
+                        col.U = node;
+                        col.S++;
+
+                        // 链入行
+                        if (first == null)
+                        {
+                            first = node;
+                            node.L = node.R = node;
+                        }
+                        else
+                        {
+                            node.R = first;
+                            node.L = first.L;
+                            first.L.R = node;
+                            first.L = node;
+                        }
+                    }
+                }
+
+                public void Search(int k, List<int> solution, Func<List<int>, CancellationToken , bool> onSolution,CancellationToken cancellationToken)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (header.R == header)
+                    {
+                        // 找到一个解
+                        if (!onSolution(solution,cancellationToken))
+                            return;
+                        return;
+                    }
+                    // 选择1最少的列
+                    ColumnNode c = null;
+                    int minS = int.MaxValue;
+                    for (var j = header.R; j != header; j = j.R)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var col = (ColumnNode)j;
+                        if (col.S < minS)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            minS = col.S;
+                            c = col;
+                        }
+                    }
+                    Cover(c,cancellationToken);
+                    for (var r = c.D; r != c; r = r.D)
+                    {
+                        solution.Add(r.RowID);
+                        for (var j = r.R; j != r; j = j.R)
+                            Cover(j.C, cancellationToken);
+                        Search(k + 1, solution, onSolution,cancellationToken);
+                        for (var j = r.L; j != r; j = j.L)
+                            Uncover(j.C,cancellationToken);
+                        solution.RemoveAt(solution.Count - 1);
+                        // 若onSolution返回false，提前终止
+                        if (header.R == header)
+                            return;
+                    }
+                    Uncover(c, cancellationToken);
+                }
+
+                private void Cover(ColumnNode c,CancellationToken cancellationToken)
+                {
+                    c.R.L = c.L;
+                    c.L.R = c.R;
+                    for (var i = c.D; i != c; i = i.D)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        for (var j = i.R; j != i; j = j.R)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            j.D.U = j.U;
+                            j.U.D = j.D;
+                            j.C.S--;
+                        }
+                    }
+                }
+
+                private void Uncover(ColumnNode c,CancellationToken cancellationToken)
+                {
+                    for (var i = c.U; i != c; i = i.U)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        for (var j = i.L; j != i; j = j.L)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            j.C.S++;
+                            j.D.U = j;
+                            j.U.D = j;
+                        }
+                    }
+                    c.R.L = c;
+                    c.L.R = c;
                 }
             }
-            return repalcedPanel;
+        }
+
+        public bool IsUniqueSolution(CancellationToken cancellationToken, List<List<Panel>> panel)
+        {
+            // 使用Dancing Links判断唯一解
+            int size = panel.Count;
+            var dlx = new SudokuDLX(size);
+            for (int i = 0; i < size; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                for (int j = 0; j < size; j++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    int val = panel[i][j].Value;
+                    if (val != 0)
+                    {
+                        dlx.AddInitialValue(i, j, val);
+                    }
+                }
+            }
+            int solutionCount = 0;
+            dlx.Solve((li, cacnl) =>
+            {
+                cacnl = cancellationToken;
+                solutionCount++;
+                // 找到第二个解就停止
+                return solutionCount < 2;
+            }, cancellationToken);
+
+            return solutionCount == 1;
         }
 
         public void Resolve(CancellationToken cancellationToken, ref List<List<Panel>> panel, List<List<UseableValue>> useableValus, Random random, bool isResolve)
@@ -454,7 +688,7 @@ namespace SudokuGame.SudokuMain
                                     item[i] = item[i].Distinct().ToList();
                                 }
                             }
-                            if (usedValue.Count() == SudokuGameSetting.PanelSize || rowUseableValues[cloum].Values.Count == 0 || cluomUseableValues[row].Values.Count == 0)
+                            if (usedValue.Count() == SudokuDotNetCoreSetting.PanelSize || rowUseableValues[cloum].Values.Count == 0 || cluomUseableValues[row].Values.Count == 0)
                             {
                                 Back(cancellationToken, ref cloum, ref row, ref panel, ref usedValue, ref rowUseableValues, ref cluomUseableValues, ref useableValus, ref usedValues, isResolve, ref resetCount);
                                 break;
@@ -517,7 +751,7 @@ namespace SudokuGame.SudokuMain
             var tempPanel = TransformToCloumOrRow(cancellationToken, panel);
             for (int i = 0; i < panel.Count; i++)
             {
-                if (panel[i].Sum(x => x.Value) != SudokuGameSetting.ValidateValue || tempPanel[i].Sum(x => x.Value) != SudokuGameSetting.ValidateValue)
+                if (panel[i].Sum(x => x.Value) != SudokuDotNetCoreSetting.ValidateValue || tempPanel[i].Sum(x => x.Value) != SudokuDotNetCoreSetting.ValidateValue)
                 {
                     res = false;
                     break;
@@ -618,10 +852,10 @@ namespace SudokuGame.SudokuMain
             GC.Collect();
         }
 
-        public static string GetRandomRowAndCloum(SudokuSetting SudokuGameSetting, Random random, ref int row, ref int cloum)
+        public static string GetRandomRowAndCloum(SudokuSetting SudokuDotNetCoreSetting, Random random, ref int row, ref int cloum)
         {
-            row = random.Next(SudokuGameSetting.PanelSize);
-            cloum = random.Next(SudokuGameSetting.PanelSize);
+            row = random.Next(SudokuDotNetCoreSetting.PanelSize);
+            cloum = random.Next(SudokuDotNetCoreSetting.PanelSize);
 
             return row.ToString() + cloum.ToString();
         }
@@ -733,7 +967,7 @@ namespace SudokuGame.SudokuMain
                           ref List<List<UseableValue>> useableValus,
                           bool isResolve)
         {
-            panel = isResolve ? Preprocessed ? CopyTo(cancellationToken, PreprocessedPanel) : CopyTo(cancellationToken, RegionPanel) : GenerateDefualtPanel(SudokuGameSetting);
+            panel = isResolve ? Preprocessed ? CopyTo(cancellationToken, PreprocessedPanel) : CopyTo(cancellationToken, RegionPanel) : GenerateDefualtPanel(SudokuDotNetCoreSetting);
             useableValus = isResolve ? GenerateUseableValue(cancellationToken, panel, null, row, cloum, useableValus[row][cloum].ResetCount) : GenerateUseableValue(cancellationToken);
             cloum = -1;
             row = 0;
@@ -772,7 +1006,7 @@ namespace SudokuGame.SudokuMain
         {
             var backupPanel = CopyTo(cancellationToken, panel);
             var useableValues = GenerateUseableValue(cancellationToken, panel, true);
-            var panels = panel.SelectMany(x => x.Where(y => y.Value == 0 && useableValues[y.Point.X][y.Point.Y].Replaceable)).ToList();
+            var panels = panel.SelectMany(x => x.Where(y => y.Value == 0 && useableValues[y.PanelPoint.X][y.PanelPoint.Y].Replaceable)).ToList();
             var resolver = new Stopwatch();
             var random = new Random();
             resolver.Restart();
@@ -840,9 +1074,9 @@ namespace SudokuGame.SudokuMain
                     while (!isFound)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        var point = panel[i][j].Point.LastPoint(panel);
+                        var point = panel[i][j].PanelPoint.LastPoint(panel);
                         var val = panel[point.X][point.Y].Value;
-                        var needRecoveryPanel = panel.SelectMany(x => x.Where(y => y.Replaceable && y.Value != 0 && (y.Point.X > point.X || (y.Point.Y >= point.Y && y.Point.X == point.X))));
+                        var needRecoveryPanel = panel.SelectMany(x => x.Where(y => y.Replaceable && y.Value != 0 && (y.PanelPoint.X > point.X || (y.PanelPoint.Y >= point.Y && y.PanelPoint.X == point.X))));
                         foreach (var item in needRecoveryPanel)
                         {
                             item.Value = 0;
@@ -861,7 +1095,7 @@ namespace SudokuGame.SudokuMain
                                 else
                                 {
                                     i = point.X - 1;
-                                    j = this.SudokuGameSetting.PanelSize - 1;
+                                    j = this.SudokuDotNetCoreSetting.PanelSize - 1;
                                 }
                             }
                             else
@@ -891,8 +1125,8 @@ namespace SudokuGame.SudokuMain
 
                                 lock (_lock)
                                 {
-                                    Console.SetCursorPosition(0, taskInfo.Index + 1);
-                                    Console.Write($"{taskInfo.Opreation} End");
+                                    //Console.SetCursorPosition(0, taskInfo.Index + 1);
+                                    //Console.Write($"{taskInfo.Opreation} End");
                                     throw new OperationEndException();
                                 }
                             }
@@ -902,8 +1136,8 @@ namespace SudokuGame.SudokuMain
                     {
                         if ((taskInfo.Index != 1 || taskInfo.Index != 5 || taskInfo.Index != 11) && resolver.Elapsed.TotalSeconds > 180)
                         {
-                            Console.SetCursorPosition(0, taskInfo.Index + 1);
-                            Console.Write($"{taskInfo.Opreation} End");
+                            //Console.SetCursorPosition(0, taskInfo.Index + 1);
+                            //Console.Write($"{taskInfo.Opreation} End");
                             throw new OperationEndException();
                         }
                     }
@@ -917,11 +1151,11 @@ namespace SudokuGame.SudokuMain
         {
             var usedValue = new List<List<int>>();
             var usedValues = new List<List<List<int>>>();
-            for (int i = 0; i < SudokuGameSetting.PanelSize; i++)
+            for (int i = 0; i < SudokuDotNetCoreSetting.PanelSize; i++)
             {
                 usedValue.Add(new List<int>());
             }
-            for (int i = 0; i < SudokuGameSetting.PanelSize; i++)
+            for (int i = 0; i < SudokuDotNetCoreSetting.PanelSize; i++)
             {
                 usedValues.Add(usedValue);
             }
@@ -949,8 +1183,8 @@ namespace SudokuGame.SudokuMain
             var backupPanel = CopyTo(cancellationToken, panel);
             backupPanel[row][cloum].Value = value;
             var tempUseable = GenerateUseableValue(cancellationToken, backupPanel, true);
-            var backupPanels = backupPanel.SelectMany(x => x.Where(y => y.Replaceable && y.Value == 0 && (y.Point.X > row || y.Point.X == row && y.Point.Y > cloum))).ToList();
-            if (backupPanels.Any(x => tempUseable[x.Point.X][x.Point.Y].Values.Count < 1))
+            var backupPanels = backupPanel.SelectMany(x => x.Where(y => y.Replaceable && y.Value == 0 && (y.PanelPoint.X > row || y.PanelPoint.X == row && y.PanelPoint.Y > cloum))).ToList();
+            if (backupPanels.Any(x => tempUseable[x.PanelPoint.X][x.PanelPoint.Y].Values.Count < 1))
             {
                 return false;
             }
@@ -1023,16 +1257,18 @@ namespace SudokuGame.SudokuMain
                     {
                         values.Add(new Panel()
                         {
+                            Replaceable = useableValus[j][i].Replaceable,
                             Value = useableValus[j][i].Value,
-                            Point = useableValus[j][i].Point,
+                            PanelPoint = useableValus[j][i].PanelPoint,
                         });
                     }
                     else
                     {
                         values.Add(new Panel()
                         {
+                            Replaceable = useableValus[i][j].Replaceable,
                             Value = useableValus[i][j].Value,
-                            Point = useableValus[i][j].Point,
+                            PanelPoint = useableValus[i][j].PanelPoint,
                         });
                     }
 
@@ -1054,8 +1290,9 @@ namespace SudokuGame.SudokuMain
                     cancellationToken.ThrowIfCancellationRequested();
                     values.Add(new Panel()
                     {
+                        Replaceable = useableValus[i][j].Replaceable,
                         Value = useableValus[i][j].Value,
-                        Point = useableValus[i][j].Point
+                        PanelPoint = useableValus[i][j].PanelPoint
                     });
                 }
                 res.Add(values);
